@@ -1,0 +1,13 @@
+# 版权素材与重资产（自备复现）
+song.flac
+mv.mp4
+frames/
+# 依赖与可再生中间产物
+node_modules/
+tools/stills/
+cover.jpg
+*.log
+.DS_Store
+
+# 投稿运营文档（本地使用，不入库）
+bilibili.md

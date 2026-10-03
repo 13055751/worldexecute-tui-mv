@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>MILI :: world.execute(me); :: TUI MV</title>
+<style>
+  html, body { margin: 0; padding: 0; background: #000; color: #8496a8;
+    font-family: "DejaVu Sans Mono", monospace; overflow: hidden; height: 100%; }
+  #wrap { position: relative; width: 100vw; height: 100vh; display: flex;
+    align-items: center; justify-content: center; }
+  canvas { display: block; width: min(100vw, 177.778vh); height: min(56.25vw, 100vh);
+    image-rendering: auto; cursor: pointer; }
+  #help { position: fixed; left: 8px; bottom: 6px; font-size: 12px; color: #39434f;
+    pointer-events: none; user-select: none; }
+  #help b { color: #f0a832; font-weight: normal; }
+</style>
+</head>
+<body>
+<div id="wrap"><canvas id="screen" width="1920" height="1080"></canvas></div>
+<div id="help">SPACE play/pause · ←/→ ±5s · HOME restart · click canvas: play / seek on transport bar</div>
+<audio id="song" src="song.flac" preload="auto"></audio>
+<script src="data/features.js"></script>
+<script src="data/cues.js"></script>
+<script src="data/zh.js"></script>
+<script src="data/words.js"></script>
+<script src="js/core.js"></script>
+<script src="js/tui.js"></script>
+<script src="js/plates.js"></script>
+<script src="js/stage.js"></script>
+<script src="js/main.js"></script>
+<script>
+boot();
+const audio = document.getElementById('song');
+const canvas = document.getElementById('screen');
+
+function frame() {
+  renderTo(audio.currentTime || 0);
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+canvas.addEventListener('click', (e) => {
+  const r = canvas.getBoundingClientRect();
+  const y = (e.clientY - r.top) / r.height;      // 0..1
+  if (y > 41 / 49 && y < 48 / 49) {             // transport bar -> seek
+    const x = (e.clientX - r.left) / r.width;
+    audio.currentTime = Math.max(0, Math.min(1, (x - 0.005)) * (window.DURATION || 211.9));
+  } else {
+    audio.paused ? audio.play() : audio.pause();
+  }
+});
+window.addEventListener('keydown', (e) => {
+  if (e.code === 'Space') { e.preventDefault(); audio.paused ? audio.play() : audio.pause(); }
+  else if (e.code === 'ArrowRight') audio.currentTime = Math.min(window.DURATION, audio.currentTime + 5);
+  else if (e.code === 'ArrowLeft') audio.currentTime = Math.max(0, audio.currentTime - 5);
+  else if (e.code === 'Home') audio.currentTime = 0;
+});
+</script>
+</body>
+</html>
