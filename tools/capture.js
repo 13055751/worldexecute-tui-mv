@@ -7,13 +7,13 @@ const { chromium } = require('playwright-core');
 const ROOT = path.join(__dirname, '..');
 const EXE = process.env.HOME + '/.cache/ms-playwright/chromium_headless_shell-1187/chrome-linux/headless_shell';
 
-async function openPage() {
+async function openPage(query) {
   const browser = await chromium.launch({ executablePath: EXE, args: ['--no-sandbox', '--disable-gpu'] });
   const page = await browser.newPage({ viewport: { width: 1920, height: 1080 }, deviceScaleFactor: 1 });
   const errors = [];
   page.on('pageerror', (e) => errors.push('pageerror: ' + e.message));
   page.on('console', (m) => { if (m.type() === 'error') errors.push('console: ' + m.text()); });
-  await page.goto('file://' + path.join(ROOT, 'index.html'));
+  await page.goto('file://' + path.join(ROOT, 'index.html') + (query || ''));
   await page.waitForFunction('window.__ready === true', null, { timeout: 15000 });
   await page.evaluate(() => document.fonts.ready);
   if (errors.length) throw new Error('page errors:\n' + errors.join('\n'));
@@ -42,12 +42,13 @@ const grab = (page, ts) => page.evaluate((list) => {
 
 async function main() {
   const mode = process.argv[2] || 'stills';
-  const { browser, page, errors } = await openPage();
+  const hdr = mode.startsWith('hdr');
+  const { browser, page, errors } = await openPage(hdr ? '?hdr=1' : '');
   try {
-    if (mode === 'stills') {
+    if (mode === 'stills' || mode === 'hdr-stills') {
       const times = (process.argv[3] || '2,16,45,75,120,150,159,165,185,196,206.5,210')
         .split(',').map(Number);
-      const outDir = path.join(ROOT, 'tools', 'stills');
+      const outDir = path.join(ROOT, 'tools', hdr ? 'stills-hdr' : 'stills');
       fs.mkdirSync(outDir, { recursive: true });
       const urls = await grab(page, times);
       times.forEach((t, i) => {
@@ -55,10 +56,10 @@ async function main() {
         fs.writeFileSync(f, Buffer.from(urls[i].split(',')[1], 'base64'));
         console.log('wrote', path.relative(ROOT, f));
       });
-    } else if (mode === 'frames') {
+    } else if (mode === 'frames' || mode === 'hdr') {
       const fps = 30;
       const n = await page.evaluate(() => window.FEATURES.nFrames);
-      const outDir = path.join(ROOT, 'frames');
+      const outDir = path.join(ROOT, hdr ? 'frames-hdr' : 'frames');
       fs.mkdirSync(outDir, { recursive: true });
       const BATCH = 30;
       const t0 = Date.now();

@@ -48,6 +48,27 @@ ffmpeg -framerate 30 -start_number 0 -i frames/%05d.png -i song.flac \
 
 改演出后跑同步审计（`REMAINING GAPS: 0` 为过），脚本见 `tools/`。
 
+## HDR 版（本分支特有）
+
+`mv-hdr.mp4`：HDR10（HEVC 10-bit / BT.2020 / PQ / limited），SDR 白映射至 350nits 峰值、中调提亮。
+
+```bash
+# 1. HDR 调色板全新渲染（?hdr=1，独立输出目录，不复用 SDR 帧）
+node tools/capture.js hdr            # -> frames-hdr/
+
+# 2. 三段式流式管道：解帧 -> 颜色转换 -> x265（内存直通，无中间缓存）
+ffmpeg -framerate 30 -start_number 0 -i frames-hdr/%05d.png -f rawvideo -pix_fmt rgb24 - \
+  | python3 tools/hdr_convert.py \
+  | ffmpeg -f rawvideo -pix_fmt yuv420p10le -s 1920x1080 -r 30 -i - -i song.flac \
+      -c:v libx265 -crf 19 -preset medium -pix_fmt yuv420p10le \
+      -color_primaries bt2020 -color_trc smpte2084 -colorspace bt2020nc -color_range tv \
+      -c:a aac -b:a 192k -shortest -movflags +faststart mv-hdr.mp4
+```
+
+颜色管线（`tools/hdr_convert.py`，纯 numpy 确定性）：sRGB 解码 → 线性光提亮 `v^0.85` → 增益 `×0.035`（白峰 350nits）→ BT.709→BT.2020 色域矩阵 → ST.2084 PQ → BT.2020 NC Y'CbCr 4:2:0 限量 10-bit。
+注：zscale 对未标记 PNG 的 SDR→PQ 转换报 `no path between colorspaces`，故颜色数学自建——公式全部可读可测。
+预览对照：`index.html?hdr=1`（HDR 调色板，`js/hdr.js`）。
+
 ## 制作心得
 
 **1. 音频是唯一的时钟。** 一切视觉状态由 `t = 音频时间` 推导：不用帧计数、不用累加的墙钟、不用绘制期随机数。这一条决定后面所有事——可 seek、可回放、可对任意时间点截图验收、可断点续渲。破坏它的每个捷径都会在导出阶段连本带利还回来。

@@ -11,3 +11,9 @@ cover.jpg
 
 # 投稿运营文档（本地使用，不入库）
 bilibili.md
+
+# HDR pass artifacts (regenerable)
+mv-hdr.mp4
+frames-hdr/
+tools/stills-hdr/
+skill-patch-reference.md

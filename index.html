@@ -16,6 +16,7 @@
 </style>
 </head>
 <body>
+<script>window.HDR = /[?&]hdr=1/.test(location.search);</script>
 <div id="wrap"><canvas id="screen" width="1920" height="1080"></canvas></div>
 <div id="help">SPACE play/pause · ←/→ ±5s · HOME restart · click canvas: play / seek on transport bar</div>
 <audio id="song" src="song.flac" preload="auto"></audio>
@@ -25,6 +26,7 @@
 <script src="data/words.js"></script>
 <script src="js/core.js"></script>
 <script src="js/tui.js"></script>
+<script src="js/hdr.js"></script>
 <script src="js/plates.js"></script>
 <script src="js/stage.js"></script>
 <script src="js/main.js"></script>
